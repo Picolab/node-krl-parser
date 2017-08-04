@@ -159,6 +159,35 @@ test("tokenizer", function(t){
         "[SYMBOL]z",
     ]);
 
+    tst('{"":-6}', [
+        "[RAW]{",
+        '[STRING]""',
+        "[RAW]:",
+        "[RAW]-",
+        "[NUMBER]6",
+        "[RAW]}",
+    ]);
+    tst("[3,-4+-x]", [
+        "[RAW][",
+        "[NUMBER]3",
+        "[RAW],",
+        "[RAW]-",
+        "[NUMBER]4",
+        "[RAW]+",
+        "[RAW]-",
+        "[SYMBOL]x",
+        "[RAW]]",
+    ]);
+    tst("fn(-_A,-.2)", [
+        "[SYMBOL]fn",
+        "[RAW](",
+        "[RAW]-",
+        "[SYMBOL]_A",
+        "[RAW],",
+        "[RAW]-",
+        "[NUMBER].2",
+        "[RAW])",
+    ]);
 
     tst("re#regex#", [
         "[REGEXP]re#regex#",
@@ -210,6 +239,29 @@ test("tokenizer", function(t){
         "[RAW]{",
         "[RAW]}",
         "[RAW]}",
+    ]);
+
+    tst("/*/", ["[ILLEGAL]/*/"]);
+    tst("/**/", ["[BLOCK-COMMENT]/**/"]);
+
+    tst("\"one", ["[ILLEGAL]\"one"]);
+    tst("re#one", ["[ILLEGAL]re#one"]);
+
+    tst("a&&b", [
+        "[SYMBOL]a",
+        "[RAW]&&",
+        "[SYMBOL]b",
+    ]);
+
+    tst("&&&", [
+        "[RAW]&&",
+        "[ILLEGAL]&",
+    ]);
+
+    tst(".λ,", [
+        "[RAW].",
+        "[ILLEGAL]λ",
+        "[RAW],",
     ]);
 
     t.end();
