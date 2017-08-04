@@ -1,28 +1,59 @@
-module.exports = function(src, opts){
-    opts = opts || {}; // unused
+var raw_toks = [
+    "<=>",
+    "<=",
+    "<",
+    "||",
+    "|",
+    "==",
+    "=>",
+    "=",
+    ":=",
+    ":",
+    ">=",
+    "><",
+    ">",
+    "&&",
+    "!=",
+    "(",
+    ")",
+    "{",
+    "}",
+    "[",
+    "]",
+    ",",
+    "/",
+    ".",
+    "-",
+    "%",
+    "+",
+    ";",
+    "*",
+];
+
+module.exports = function(src){
 
     var tokens = [];
     var beesting_stack = [];
     var buff = ""; // modified by pushTok and addToBuffer
     var peek;
-
-    var next_loc = 0; // only for pushTok
-
-    var pushTok = function(value, name){
-        var loc = {start: next_loc, end: next_loc + value.length};
-
-        tokens.push({
-            type: name,
-            src: value,
-            loc: loc
-        });
-
-        next_loc = loc.end;
-        buff = "";
-    };
-
     var i = 0;
     var c = src[0];
+
+    var pushTok = (function(){
+        var next_loc = 0;
+        return function(value, name){
+            var loc = {start: next_loc, end: next_loc + value.length};
+
+            tokens.push({
+                type: name,
+                src: value,
+                loc: loc
+            });
+
+            next_loc = loc.end;
+            buff = "";
+        };
+    }());
 
     var advance = function(n){
         i += n;
@@ -64,37 +95,6 @@ module.exports = function(src, opts){
         advance(2);
     };
 
-    var raw_toks = [
-        "<=>",
-        "<=",
-        "<",
-        "||",
-        "|",
-        "==",
-        "=>",
-        "=",
-        ":=",
-        ":",
-        ">=",
-        "><",
-        ">",
-        "&&",
-        "!=",
-        "(",
-        ")",
-        "{",
-        "}",
-        "[",
-        "]",
-        ",",
-        "/",
-        ".",
-        "-",
-        "%",
-        "+",
-        ";",
-        "*",
-    ];
 
     while(i < src.length){
         if(/\s/.test(c)){
@@ -132,7 +132,7 @@ module.exports = function(src, opts){
                     pushTok(buff + "*/", "BLOCK-COMMENT");
                     advance(2);
                 }else{
-                    pushTok(buff, "RAW-ILLEGAL");
+                    pushTok(buff, "ILLEGAL");
                 }
 
                 continue;
@@ -172,7 +172,7 @@ module.exports = function(src, opts){
                 pushTok(buff + '"', "STRING");
                 advance(1);
             }else{
-                pushTok(buff, "RAW-ILLEGAL");
+                pushTok(buff, "ILLEGAL");
             }
 
             continue;
@@ -193,7 +193,7 @@ module.exports = function(src, opts){
                 pushTok(buff + "#", "REGEXP");
                 advance(1);
             }else{
-                pushTok(buff, "RAW-ILLEGAL");
+                pushTok(buff, "ILLEGAL");
             }
 
             continue;
@@ -234,10 +234,9 @@ module.exports = function(src, opts){
         }
 
         var tok = 0;
-        var l = [c, c + src[i + 1], src.substring(i, i + 3)]; // lookahead
 
         while(tok < raw_toks.length){
-            if(raw_toks[tok] === l[raw_toks[tok].length-1]){
+            if(raw_toks[tok] === src.substring(i, i + raw_toks[tok].length)){
                 pushTok(raw_toks[tok], "RAW");
                 advance(raw_toks[tok].length);
                 break;
@@ -246,7 +245,7 @@ module.exports = function(src, opts){
         }
 
         if(tok === raw_toks.length){
-            pushTok(c, "RAW-ILLEGAL");
+            pushTok(c, "ILLEGAL");
             advance(1);
         }
     }
