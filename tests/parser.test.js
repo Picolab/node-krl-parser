@@ -14,6 +14,7 @@ var parseRuleBody = function(rule_body, expected){
     return parser(src).rules[0];
 };
 
+// do NOT use if v is/has a chevron
 var mk = function(v){
     if(_.isNumber(v)){
         return {type: "Number", value: v};
@@ -2522,6 +2523,75 @@ test("Parameters", function(t){
         mk.param("b", mk("wat")),
         mk.param("c", mk.op("+", mk.id("b"), mk(" da"))),
     ]);
+
+    t.end();
+});
+
+test("escaping", function(t){
+    var tst = function(src, expected, msg){
+        var ast = parser(src);
+        ast = ast[0];
+        if(ast.type === "ExpressionStatement"){
+            ast = ast.expression;
+        }
+        t.deepEquals(normalizeAST(rmLoc(ast)), normalizeAST(expected), msg);
+    };
+
+    tst('"one\\""', mk('one"'), "escape '\"' in a string");
+    tst("<<one\\\">>", {
+        type: "Chevron",
+        value: [
+            {type: "String", value: 'one\\"'}
+        ]
+    }, "don't escape '\"' in a chevron");
+    tst("re#one\\\"#", mk(/one\"/), "don't escape '\"' in a regexp");
+
+    tst('"one\\>\\>+two\\>"', mk("one\\>\\>+two\\>"), "don't escape '>' in a string");
+    tst("<<one\\>\\>+two\\>>>", {
+        type: "Chevron",
+        value: [
+            {type: "String", value: "one>>+two>"}
+        ]
+    }, "escape '>' in a chevron");
+    tst("re#one\\>\\>+two\\>#", mk(/one\>\>+two\>/), "don't escape '>' in a regexp");
+
+    tst('"one\\#{"', mk("one\\#{"), "don't escape '#{' in a string");
+    tst("<<one\\#{>>", {
+        type: "Chevron",
+        value: [
+            {type: "String", value: "one#{"}
+        ]
+    }, "escape '#{' in a chevron");
+    tst("re#one\\#{#", mk(/one#{/), "escape '#{' in a regexp");
+
+    tst('"one\\#"', mk("one\\#"), "don't escape '#' in a string");
+    tst("<<one\\#>>", {
+        type: "Chevron",
+        value: [
+            {type: "String", value: "one\\#"}
+        ]
+    }, "don't escape '#' in a chevron");
+    tst("re#one\\##", mk(/one#/), "escape '#' in a regexp");
+
+    tst('"one\\{"', mk("one\\{"), "don't escape '{' in a string");
+    tst("<<one\\{>>", {
+        type: "Chevron",
+        value: [
+            {type: "String", value: "one\\{"}
+        ]
+    }, "don't escape '{' in a chevron");
+    tst("re#one\\{#", mk(/one\{/), "don't escape '{' in a regexp");
+
+    tst('"one\\\\"', mk("one\\"), "leave '\\' in a string");
+    tst("<<one\\\\#{0}+two\\\\>>", {
+        type: "Chevron",
+        value: [
+            {type: "String", value: "one\\"},
+            {type: "Number", value: 0},
+            {type: "String", value: "+two\\"}
+        ]
+    }, "leave '\\' in a chevron");
+    tst("re#one\\\\#", mk(/one\\/), "leave '\\' in a regexp");
 
     t.end();
 });
