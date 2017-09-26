@@ -1,5 +1,7 @@
 # krl-parser
 
+MOVED TO https://github.com/Picolab/pico-engine/tree/master/packages/krl-parser
+
 [![build status](https://secure.travis-ci.org/Picolab/node-krl-parser.svg)](https://travis-ci.org/Picolab/node-krl-parser)
 
 Parse KRL source code into an AST
